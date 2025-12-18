@@ -1,4 +1,4 @@
-name: publish-charts-ghcr
+name: publish-charts
 
 on:
   push:

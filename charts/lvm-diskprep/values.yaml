@@ -13,7 +13,7 @@ tolerations:
 # One device + one VG per release
 lvm:
   pvDev: /dev/disk/by-partlabel/r-topolvm
-  vgName: vg_topolvm
+  vgName: topolvm
 
 metrics:
   enabled: true
