@@ -1,4 +1,5 @@
 fullnameOverride: ""
+nameOverride: ""
 
 image:
   repository: justcontainers/s6-debian-lvm
