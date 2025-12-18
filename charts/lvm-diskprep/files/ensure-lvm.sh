@@ -8,7 +8,7 @@ set -euo pipefail
 : "${METRICS_ENABLED:=1}"
 : "${METRICS_DIR:=/var/lib/node_exporter}"
 : "${METRICS_FILE:=lvm_diskprep.prom}"
-: "${INTERVAL_SECONDS:=60}"
+: "${INTERVAL_SECONDS:=120}"
 
 umask 022
 

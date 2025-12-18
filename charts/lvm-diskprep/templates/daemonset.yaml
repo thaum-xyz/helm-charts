@@ -17,10 +17,8 @@ spec:
         app.kubernetes.io/name: {{ include "diskprep.name" . }}
     spec:
       hostPID: true
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | nindent 8 }}
-      tolerations:
-{{ toYaml .Values.tolerations | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.tolerations | nindent 8 }}
       containers:
         - name: ensure
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

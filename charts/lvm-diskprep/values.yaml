@@ -20,4 +20,4 @@ metrics:
   enabled: true
   textfileDir: /var/lib/node_exporter
   metricsFile: lvm_diskprep.prom
-  intervalSeconds: 60
+  intervalSeconds: 120

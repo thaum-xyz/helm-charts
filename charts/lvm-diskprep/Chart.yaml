@@ -1,6 +1,5 @@
 apiVersion: v2
 name: lvm-diskprep
-description: Prepare node disks for CSI stacks (TopoLVM, LINSTOR) on Talos via privileged DaemonSets and textfile metrics
+description: Prepare LVM node disks for CSI stacks on Talos via privileged DaemonSets and textfile metrics
 type: application
-version: 0.1.0
-appVersion: "1.0"
+version: 0.1.1
