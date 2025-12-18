@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 set -euo pipefail
 
 : "${VG_NAME:?VG_NAME must be set}"

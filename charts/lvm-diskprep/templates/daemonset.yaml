@@ -42,13 +42,7 @@ spec:
               value: {{ .Values.metrics.metricsFile | quote }}
             - name: INTERVAL_SECONDS
               value: {{ .Values.metrics.intervalSeconds | quote }}
-          command: ["/bin/sh","-lc"]
-          args:
-            - |
-              set -e
-              cp /config/ensure-lvm.sh /run/ensure-lvm.sh
-              chmod +x /run/ensure-lvm.sh
-              exec /run/ensure-lvm.sh
+          command: ["/config/ensure-lvm.sh"]
           volumeMounts:
             - name: config
               mountPath: /config
