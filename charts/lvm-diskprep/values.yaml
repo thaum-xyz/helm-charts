@@ -1,7 +1,7 @@
 fullnameOverride: ""
 
 image:
-  repository: ghcr.io/you/your-lvm-tools
+  repository: justcontainers/s6-debian-lvm
   tag: latest
   pullPolicy: IfNotPresent
 
