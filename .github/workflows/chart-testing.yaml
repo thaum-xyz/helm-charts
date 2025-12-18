@@ -1,0 +1,67 @@
+name: chart-testing
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/workflows/chart-testing.yaml"
+      - ".ct.yaml"
+  push:
+    branches: ["main"]
+    paths:
+      - "charts/**"
+      - ".github/workflows/chart-testing.yaml"
+      - ".ct.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  ct:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - name: Set up Python (required by ct)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2
+
+      - name: List changed charts
+        id: list-changed
+        run: |
+          set -euo pipefail
+          changed="$(ct list-changed --config .ct.yaml)"
+          if [ -n "$changed" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "changed_charts<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$changed" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint charts
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --config .ct.yaml
+
+      # Install tests require a cluster:
+      - name: Create kind cluster
+        if: steps.list-changed.outputs.changed == 'true'
+        uses: helm/kind-action@v1.10.0
+
+      - name: Install charts
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct install --config .ct.yaml

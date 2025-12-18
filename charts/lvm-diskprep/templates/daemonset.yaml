@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "diskprep.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "diskprep.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "diskprep.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/name: {{ include "diskprep.name" . }}
+    spec:
+      hostPID: true
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+{{ toYaml .Values.tolerations | nindent 8 }}
+      containers:
+        - name: ensure
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            privileged: true
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: VG_NAME
+              value: {{ .Values.lvm.vgName | quote }}
+            - name: PV_DEV
+              value: {{ .Values.lvm.pvDev | quote }}
+            - name: METRICS_ENABLED
+              value: {{ ternary "1" "0" .Values.metrics.enabled | quote }}
+            - name: METRICS_DIR
+              value: {{ .Values.metrics.textfileDir | quote }}
+            - name: METRICS_FILE
+              value: {{ .Values.metrics.metricsFile | quote }}
+            - name: INTERVAL_SECONDS
+              value: {{ .Values.metrics.intervalSeconds | quote }}
+          command: ["/bin/sh","-lc"]
+          args:
+            - |
+              set -e
+              cp /config/ensure-lvm.sh /run/ensure-lvm.sh
+              chmod +x /run/ensure-lvm.sh
+              exec /run/ensure-lvm.sh
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: dev
+              mountPath: /dev
+            - name: runlvm
+              mountPath: /run/lvm
+            - name: nodeexporter-textfile
+              mountPath: {{ .Values.metrics.textfileDir | quote }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "diskprep.fullname" . }}-script
+            defaultMode: 0555
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: runlvm
+          hostPath:
+            path: /run/lvm
+        - name: nodeexporter-textfile
+          hostPath:
+            path: {{ .Values.metrics.textfileDir | quote }}
+            type: DirectoryOrCreate

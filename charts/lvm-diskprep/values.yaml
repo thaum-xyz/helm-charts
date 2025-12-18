@@ -1,0 +1,22 @@
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/you/your-lvm-tools
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Only run on nodes matching this selector
+nodeSelector: {}
+tolerations:
+  - operator: Exists
+
+# One device + one VG per release
+lvm:
+  pvDev: /dev/disk/by-partlabel/r-topolvm
+  vgName: vg_topolvm
+
+metrics:
+  enabled: true
+  textfileDir: /var/lib/node_exporter
+  metricsFile: lvm_diskprep.prom
+  intervalSeconds: 60
