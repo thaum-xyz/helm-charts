@@ -30,6 +30,5 @@ jobs:
             oci_username: thaum-xyz
             oci_password: ${{ secrets.GITHUB_TOKEN }}
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            skip_existing: true
             skip_helm_install: true
             mark_as_latest: false
