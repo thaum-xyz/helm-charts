@@ -2,8 +2,8 @@ fullnameOverride: ""
 nameOverride: ""
 
 image:
-  repository: justcontainers/s6-debian-lvm
-  tag: latest
+  repository: ghcr.io/thaum-xyz/containers/lvm-tools
+  tag: "2025.12.18"
   pullPolicy: IfNotPresent
 
 # Only run on nodes matching this selector
