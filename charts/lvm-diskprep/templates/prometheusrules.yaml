@@ -8,15 +8,5 @@ metadata:
     app.kubernetes.io/name: {{ include "diskprep.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  groups:
-  - name: diskprep.rules
-    rules:
-    - alert: LVMDiskPreparationFailure
-      annotations:
-        description: "LVM Disk Preparation has failed on {{ $labels.node }} with reason: {{ $labels.reason }}."
-        summary: "LVM Disk Preparation has failed on one or more nodes."
-      expr: lvm_diskprep_status{reason!="none"} == 1
-      for: 5m
-      labels:
-        severity: warning
+{{- .Files.Get "files/alerts.yaml" | nindent 2 -}}
 {{- end }}
