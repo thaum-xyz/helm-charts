@@ -21,3 +21,6 @@ metrics:
   textfileDir: /var/lib/node_exporter
   metricsFile: lvm_diskprep.prom
   intervalSeconds: 120
+
+prometheusRule:
+  enabled: true
