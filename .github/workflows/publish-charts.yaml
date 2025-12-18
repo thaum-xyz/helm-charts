@@ -2,8 +2,10 @@ name: publish-charts
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches: ["main", "master"]
+    paths:
+      - "charts/**"
+      - ".github/workflows/publish.yaml"
 
 permissions:
   contents: read
@@ -12,61 +14,19 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
+      # This action handles Helm login + push to OCI registry for charts.
+      # Configure it to scan charts/ and publish to ghcr.io.
+      - name: Push Helm charts to GHCR (OCI)
+        uses: faros-ai/helm-oci-charts-releaser@v1
         with:
-          version: v3.15.4
-
-      - name: Set up Python (required by ct)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2
-
-      - name: Determine changed charts (vs main)
-        id: list-changed
-        run: |
-          set -euo pipefail
-          git fetch origin main:refs/remotes/origin/main
-          changed="$(ct list-changed --config .ct.yaml --target-branch main)"
-          echo "changed_charts<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$changed" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR (OCI)
-        run: |
-          set -euo pipefail
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Package & push changed charts
-        env:
-          OCI_REPO: oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
-        run: |
-          set -euo pipefail
-
-          charts="${{ steps.list-changed.outputs.changed_charts }}"
-          if [ -z "$charts" ]; then
-            echo "No changed charts detected; nothing to publish."
-            exit 0
-          fi
-
-          mkdir -p .dist
-
-          echo "$charts" | while read -r chart; do
-            [ -n "$chart" ] || continue
-
-            echo "Packaging: $chart"
-            pkg="$(helm package "$chart" --destination .dist | awk '{print $NF}')"
-
-            echo "Pushing $pkg to $OCI_REPO"
-            helm push "$pkg" "$OCI_REPO"
-          done
+          charts_dir: charts
+          registry: ghcr.io
+          repository: ${{ github.repository_owner }}/${{ github.event.repository.name }}
+          # Uses GitHub token for GHCR auth
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
