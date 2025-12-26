@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: versitygw
+    app.kubernetes.io/instance: {{ .Values.bucketName }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: awscli
+        image: amazon/aws-cli:2
+        env:
+        - name: BUCKET_NAME
+          value: {{ .Values.bucketName }}
+        - name: ENDPOINT
+          value: http://versitygw:80
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: ROOT_ACCESS_KEY
+              {{ if .Values.credentials.existingSecret.enabled }}
+              name: {{ .Values.credentials.existingSecret.name }}
+              {{ else }}
+              name: {{ .Release.Name }}-credentials
+              {{ end }}
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: ROOT_SECRET_KEY
+              {{ if .Values.credentials.existingSecret.enabled }}
+              name: {{ .Values.credentials.existingSecret.name }}
+              {{ else }}
+              name: {{ .Release.Name }}-credentials
+              {{ end }}
+        - name: AWS_DEFAULT_REGION
+          value: us-east-1
+        command: ["/bin/sh","-lc"]
+        args:
+          - |
+            aws --endpoint-url "$ENDPOINT" s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null \
+              || aws --endpoint-url "$ENDPOINT" s3api create-bucket --bucket "$BUCKET_NAME"

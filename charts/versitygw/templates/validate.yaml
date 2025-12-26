@@ -1,0 +1,3 @@
+{{ if and (not .Values.createSecret) (not .Values.credentials.existingSecret.enabled) (not .Values.credentials.externalSecret.enabled) }}
+{{ fail "Credentials must be provided either as a secret or an external secret" }}
+{{- end -}}

@@ -1,0 +1,44 @@
+image:
+  repository: ghcr.io/versity/versitygw
+  tag: "1.0.20"
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+bucketName: bucket
+
+credentials:
+  createSecret:
+    enabled: true
+    accessKey: ""
+    secretKey: ""
+  existingSecret:
+    enabled: false
+    name: ""
+  externalSecret:
+    enabled: false
+    name: ""
+    accessKeyRef:
+      key:
+      property:
+    secretKeyRef:
+      key:
+      property:
+    secretStoreRef:
+      kind: ClusterSecretStore
+      name: ""
+
+storage:
+  data:
+    size: 10Gi
+    storageClassName: unifi-nas
+    accessModes:
+    - ReadWriteMany
+  metadata:
+    size: 2Gi
+    storageClassName: longhorn
+    accessModes:
+    - ReadWriteMany
+
+nodeSelector: {}
+tolerations: []
