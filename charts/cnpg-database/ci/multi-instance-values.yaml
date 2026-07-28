@@ -1,0 +1,24 @@
+# multimedia: three clusters in one namespace, own store name and backup secret
+fullnameOverride: postgres-prowlarr
+database: prowlarr
+owner: prowlarr
+cluster:
+  storage:
+    size: 1Gi
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+  bootstrap:
+    postInitSQL:
+      - CREATE DATABASE logs;
+      - ALTER DATABASE logs OWNER TO prowlarr;
+backup:
+  schedule: "0 7 3 * * *"
+  objectStore:
+    name: backblaze-prowlarr
+    retentionPolicy: 7d
+    pathSuffix: prowlarr
+externalSecrets:
+  admin:
+    remoteKey: PROWLARR_DB_ADMIN_PASS
+  user:
+    remoteKey: PROWLARR_DB_PASS

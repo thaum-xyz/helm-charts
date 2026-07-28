@@ -1,0 +1,19 @@
+database: mealie
+owner: mealie
+cluster:
+  instances: 3
+  storage:
+    size: 2Gi
+  resources:
+    limits: {cpu: 400m, memory: 420Mi}
+    requests: {cpu: 130m, memory: 300Mi}
+backup:
+  schedule: "0 17 23 * * *"
+  objectStore:
+    retentionPolicy: 30d
+    pathSuffix: mealie
+externalSecrets:
+  admin:
+    remoteKey: MEALIE_DB_ADMIN_PASS
+  user:
+    remoteKey: MEALIE_DB_PASS

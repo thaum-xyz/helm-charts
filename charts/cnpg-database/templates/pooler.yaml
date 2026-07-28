@@ -1,0 +1,36 @@
+{{- if .Values.pooler.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ .Values.pooler.name }}
+  labels: {{- include "cnpg-database.labels" . | nindent 4 }}
+spec:
+  cluster:
+    name: {{ include "cnpg-database.fullname" . }}
+  instances: {{ .Values.pooler.instances }}
+  type: {{ .Values.pooler.type }}
+  monitoring:
+    enablePodMonitor: {{ .Values.pooler.monitoring.enablePodMonitor }}
+  pgbouncer:
+    poolMode: {{ .Values.pooler.pgbouncer.poolMode }}
+    {{- with .Values.pooler.pgbouncer.parameters }}
+    parameters: {{- toYaml . | nindent 6 }}
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.pooler.podLabel }}
+    spec:
+      # Required by the Pooler schema even though the operator populates it.
+      containers: []
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - {{ .Values.pooler.podLabel }}
+              topologyKey: kubernetes.io/hostname
+{{- end }}

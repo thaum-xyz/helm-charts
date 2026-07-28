@@ -1,0 +1,53 @@
+groups:
+  - name: cnpg-database-backups
+    rules:
+      # Built on the barman plugin's own metrics, not cnpg_collector_*. The
+      # built-in collector metrics report 0 for plugin-method backups, so an
+      # alert on them fires forever while telling you nothing.
+      #
+      # Aggregated by job, which carries "<namespace>/<cluster>", because a
+      # namespace can hold several clusters. max() picks the primary: replicas
+      # report 0.
+      - alert: CNPGBackupTooOld
+        expr: |
+          time() - max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp > 0)
+            > {{ .Values.prometheusRule.maxBackupAgeSeconds }}
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: PostgreSQL backup for {{ `{{ $labels.job }}` }} is stale
+          description: >-
+            The newest barman-cloud backup for {{ `{{ $labels.job }}` }} is
+            {{ `{{ $value | humanizeDuration }}` }} old, past the
+            {{ .Values.prometheusRule.maxBackupAgeSeconds }}s threshold. Check
+            the ScheduledBackup status: if lastCheckTime is frozen the controller
+            may be stuck retrying an already-existing Backup name.
+
+      - alert: CNPGBackupMissing
+        expr: |
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp) == 0
+        for: 6h
+        labels:
+          severity: critical
+        annotations:
+          summary: PostgreSQL cluster {{ `{{ $labels.job }}` }} has no backup
+          description: >-
+            No barman-cloud backup has ever been recorded for
+            {{ `{{ $labels.job }}` }}. CloudNativePG PVCs are owned by the
+            Cluster and the storage class reclaims on delete, so this cluster has
+            no recovery path at all.
+
+      - alert: CNPGBackupFailing
+        expr: |
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp)
+            > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp)
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: PostgreSQL backup for {{ `{{ $labels.job }}` }} is failing
+          description: >-
+            The last backup attempt for {{ `{{ $labels.job }}` }} failed more
+            recently than the last success, so backups are running but not
+            completing.
