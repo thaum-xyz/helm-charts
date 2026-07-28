@@ -97,8 +97,17 @@ externalSecrets:
   secretStoreRef:
     kind: ClusterSecretStore
     name: doppler-auth-api
-  # -- Set to {} for a byte-identical migration of a cluster whose live
-  # ExternalSecrets do not carry this annotation.
+  # -- Set to `null` -- not `{}` -- to drop this for a byte-identical migration
+  # of a cluster whose live ExternalSecrets do not carry the annotation. Helm
+  # deep-merges maps, so `{}` leaves the default in place; only an explicit null
+  # removes the key.
+  #
+  # NOTE: this lands on the ExternalSecret's own metadata, which is where the
+  # existing manifests put it. External Secrets only copies
+  # spec.target.template.metadata annotations onto the generated Secret, so as
+  # written this never reaches the Secret and CloudNativePG never sees it.
+  # Reproduced here deliberately to keep migrations byte-identical; moving it
+  # somewhere it takes effect is a separate, behavioural change.
   annotations:
     cnpg.io/reload: "true"
   admin:
