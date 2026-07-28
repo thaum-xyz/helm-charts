@@ -1,0 +1,18 @@
+# atuin: already-initialised cluster with no spec.bootstrap and a pinned image
+database: atuin
+owner: atuin
+cluster:
+  bootstrap:
+    enabled: false
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.11
+  storage:
+    size: 2Gi
+backup:
+  objectStore:
+    retentionPolicy: 14d
+    pathSuffix: atuin
+externalSecrets:
+  admin:
+    remoteKey: ATUIN_DB_ADMIN_PASS
+  user:
+    remoteKey: ATUIN_DB_PASS

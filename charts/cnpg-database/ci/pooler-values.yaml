@@ -1,0 +1,19 @@
+# paperless: adds a Pooler and uses switchover
+database: paperless
+owner: paperless
+cluster:
+  instances: 3
+  primaryUpdateMethod: switchover
+  storage:
+    size: 4Gi
+pooler:
+  enabled: true
+backup:
+  objectStore:
+    retentionPolicy: 14d
+    pathSuffix: paperless
+externalSecrets:
+  admin:
+    remoteKey: PAPERLESS_DB_ADMIN_PASS
+  user:
+    remoteKey: PAPERLESS_DB_PASS

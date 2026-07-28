@@ -1,0 +1,57 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "cnpg-database.fullname" . }}
+  labels: {{- include "cnpg-database.labels" . | nindent 4 }}
+  {{- $ann := deepCopy (default (dict) .Values.cluster.annotations) }}
+  {{- if .Values.retain }}
+  {{- $_ := set $ann "helm.sh/resource-policy" "keep" }}
+  {{- end }}
+  {{- with $ann }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.cluster.affinity }}
+  affinity: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.backup.enabled }}
+  plugins:
+    - name: {{ .Values.backup.pluginName }}
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: {{ .Values.backup.objectStore.name }}
+  {{- end }}
+  {{- if .Values.cluster.bootstrap.enabled }}
+  bootstrap:
+    initdb:
+      database: {{ required "database is required when cluster.bootstrap.enabled" .Values.database }}
+      owner: {{ include "cnpg-database.owner" . }}
+      secret:
+        name: {{ include "cnpg-database.fullname" . }}-user
+      {{- with .Values.cluster.bootstrap.postInitSQL }}
+      postInitSQL: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cluster.bootstrap.postInitApplicationSQL }}
+      postInitApplicationSQL: {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- end }}
+  {{- with .Values.cluster.imageName }}
+  imageName: {{ . }}
+  {{- end }}
+  instances: {{ .Values.cluster.instances }}
+  {{- with .Values.cluster.primaryUpdateMethod }}
+  primaryUpdateMethod: {{ . }}
+  {{- end }}
+  monitoring:
+    enablePodMonitor: {{ .Values.cluster.monitoring.enablePodMonitor }}
+  {{- with .Values.cluster.postgresql }}
+  postgresql: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.cluster.resources }}
+  resources: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  storage:
+    size: {{ .Values.cluster.storage.size }}
+    storageClass: {{ .Values.cluster.storage.storageClass }}
+  superuserSecret:
+    name: {{ include "cnpg-database.fullname" . }}-admin

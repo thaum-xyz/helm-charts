@@ -1,0 +1,24 @@
+{{- if .Values.backup.enabled }}
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ .Values.backup.objectStore.name }}
+  {{- if .Values.retain }}
+  annotations:
+    helm.sh/resource-policy: keep
+  {{- end }}
+spec:
+  retentionPolicy: {{ .Values.backup.objectStore.retentionPolicy }}
+  configuration:
+    destinationPath: {{ include "cnpg-database.destinationPath" . }}
+    endpointURL: {{ .Values.backup.objectStore.endpointURL }}
+    s3Credentials:
+      accessKeyId:
+        key: {{ .Values.backup.objectStore.credentials.accessKeyKey }}
+        name: {{ include "cnpg-database.backupSecret" . }}
+      secretAccessKey:
+        key: {{ .Values.backup.objectStore.credentials.secretKeyKey }}
+        name: {{ include "cnpg-database.backupSecret" . }}
+    wal:
+      compression: {{ .Values.backup.objectStore.wal.compression }}
+{{- end }}

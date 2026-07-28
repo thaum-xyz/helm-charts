@@ -1,0 +1,124 @@
+# -- Value of the app.kubernetes.io/name label. Defaults to "postgres" rather
+# than the chart name, because that is what the existing manifests use.
+nameOverride: ""
+# -- Resource name stem. Defaults to .Release.Name.
+# IMPORTANT: this must render to the same name the cluster already uses, because
+# CloudNativePG derives the read-write Service from it (`<fullname>-rw`) and that
+# hostname is hardcoded by every consumer. Do not let it become
+# "<release>-<chart>".
+fullnameOverride: ""
+
+# -- Application database name. Required unless cluster.bootstrap.enabled=false.
+database: ""
+# -- Owning role. Defaults to .Values.database. Also used as the username in the
+# user ExternalSecret, so it is needed even when bootstrap is disabled.
+owner: ""
+
+# -- Adds helm.sh/resource-policy: keep to the Cluster and ObjectStore so no
+# Helm action (including an install-remediation uninstall) can delete the Cluster
+# and, through its ownerReferences, its PVCs.
+retain: true
+
+cluster:
+  instances: 2
+  # -- Empty means omit spec.imageName and take the operator default.
+  imageName: ""
+  # -- Empty means omit spec.primaryUpdateMethod.
+  primaryUpdateMethod: ""
+  monitoring:
+    enablePodMonitor: true
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
+  storage:
+    size: 2Gi
+    storageClass: lvm-thin
+  # -- Deliberately empty. Helm deep-merges maps, so a default limits block could
+  # not be removed by omission in a per-instance values file -- it would silently
+  # impose limits on the clusters that intentionally set requests only.
+  resources: {}
+  # -- Passthrough for spec.postgresql (parameters, shared_preload_libraries...).
+  postgresql: {}
+  bootstrap:
+    # -- false omits spec.bootstrap entirely. Needed for clusters that are
+    # already initialised and have no bootstrap stanza in their live spec;
+    # adding one can be rejected by the validating webhook.
+    enabled: true
+    postInitSQL: []
+    postInitApplicationSQL: []
+  # -- Extra annotations on the Cluster.
+  annotations: {}
+
+backup:
+  enabled: true
+  schedule: "0 17 23 * * *"
+  suspend: false
+  backupOwnerReference: self
+  pluginName: barman-cloud.cloudnative-pg.io
+  objectStore:
+    # -- NOT derived from the release name: several namespaces host more than one
+    # cluster and each needs its own store.
+    name: backblaze
+    # -- Varies per database (3d to 30d in practice); no safe default beyond this.
+    retentionPolicy: 30d
+    bucketPrefix: s3://minio-ankhmorpork-thaum-xyz/postgres
+    # -- Required. Note this is not always the namespace name.
+    pathSuffix: ""
+    # -- Escape hatch; wins over bucketPrefix/pathSuffix.
+    destinationPath: ""
+    endpointURL: https://s3.eu-central-003.backblazeb2.com
+    wal:
+      compression: gzip
+    credentials:
+      # -- Empty means <fullname>-backup.
+      secretName: ""
+      accessKeyKey: S3_ACCESS_KEY
+      secretKeyKey: S3_SECRET_KEY
+
+pooler:
+  enabled: false
+  # -- Live name is "pooler", not "<fullname>-pooler".
+  name: pooler
+  instances: 2
+  type: rw
+  monitoring:
+    enablePodMonitor: true
+  pgbouncer:
+    poolMode: session
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "10"
+  podLabel: pooler
+
+externalSecrets:
+  enabled: true
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: doppler-auth-api
+  # -- Set to {} for a byte-identical migration of a cluster whose live
+  # ExternalSecrets do not carry this annotation.
+  annotations:
+    cnpg.io/reload: "true"
+  admin:
+    # -- Doppler key for the superuser password. Required.
+    remoteKey: ""
+    username: postgres
+  user:
+    # -- Doppler key for the application password. Required.
+    remoteKey: ""
+    # -- Empty falls back to .Values.owner, then .Values.database.
+    username: ""
+  backup:
+    accessKeyRemoteKey: POSTGRES_S3_ACCESS_KEY
+    secretKeyRemoteKey: POSTGRES_S3_SECRET_KEY
+
+prometheusRule:
+  # -- Backup alerting. Deliberately built on the barman plugin's own metrics
+  # (barman_cloud_cloudnative_pg_io_*) and NOT on cnpg_collector_*: the built-in
+  # collector metrics read 0 for plugin-method backups, so an alert on them would
+  # fire constantly while telling you nothing.
+  enabled: true
+  # -- Warn when the newest backup is older than this many seconds (default 2d).
+  maxBackupAgeSeconds: 172800

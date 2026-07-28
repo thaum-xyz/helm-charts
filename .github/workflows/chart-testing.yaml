@@ -37,8 +37,39 @@ jobs:
       - name: Lint
         run: ct lint --config .ct.yaml
 
+      # Charts that render only custom resources cannot be installed into a bare
+      # kind cluster, and installing them would only prove the CRDs accept the
+      # manifests. The schema check below does that without a cluster.
+      - name: Validate rendered manifests against schemas
+        env:
+          KUBECONFORM_VERSION: v0.8.0
+          CRD_CATALOG: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+        run: |
+          curl -sSL --fail \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin kubeconform
+          rc=0
+          for chart in charts/*/; do
+            [ -d "$chart/ci" ] || continue
+            for values in "$chart"ci/*-values.yaml; do
+              [ -f "$values" ] || continue
+              echo "::group::$(basename "$chart") <- $(basename "$values")"
+              if ! helm template t "$chart" -n ci -f "$values" \
+                   | kubeconform -strict -summary \
+                       -schema-location default \
+                       -schema-location "$CRD_CATALOG" -; then
+                rc=1
+              fi
+              echo "::endgroup::"
+            done
+          done
+          exit $rc
+
       - name: Create kind cluster
         uses: helm/kind-action@v1.10.0
 
+      # cnpg-database renders only CRs (Cluster, ObjectStore, ExternalSecret,
+      # PrometheusRule), so it needs four operators' CRDs to install. It is
+      # covered by the schema check above instead.
       - name: Install
-        run: ct install --config .ct.yaml
+        run: ct install --config .ct.yaml --excluded-charts cnpg-database

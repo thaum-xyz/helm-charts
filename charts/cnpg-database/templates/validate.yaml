@@ -1,0 +1,15 @@
+{{- if and .Values.cluster.bootstrap.enabled (not .Values.database) }}
+{{- fail "database is required when cluster.bootstrap.enabled" }}
+{{- end }}
+{{- if and .Values.backup.enabled (not .Values.backup.objectStore.destinationPath) (not .Values.backup.objectStore.pathSuffix) }}
+{{- fail "backup.objectStore.pathSuffix or backup.objectStore.destinationPath must be set when backup.enabled" }}
+{{- end }}
+{{- if and .Values.externalSecrets.enabled (not .Values.externalSecrets.admin.remoteKey) }}
+{{- fail "externalSecrets.admin.remoteKey is required" }}
+{{- end }}
+{{- if and .Values.externalSecrets.enabled (not .Values.externalSecrets.user.remoteKey) }}
+{{- fail "externalSecrets.user.remoteKey is required" }}
+{{- end }}
+{{- if and (not .Values.database) (not .Values.owner) .Values.externalSecrets.enabled }}
+{{- fail "owner or database must be set: it becomes the username in the user ExternalSecret" }}
+{{- end }}
