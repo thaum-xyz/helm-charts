@@ -97,19 +97,29 @@ externalSecrets:
   secretStoreRef:
     kind: ClusterSecretStore
     name: doppler-auth-api
-  # -- Set to `null` -- not `{}` -- to drop this for a byte-identical migration
-  # of a cluster whose live ExternalSecrets do not carry the annotation. Helm
-  # deep-merges maps, so `{}` leaves the default in place; only an explicit null
-  # removes the key.
-  #
-  # NOTE: this lands on the ExternalSecret's own metadata, which is where the
-  # existing manifests put it. External Secrets only copies
-  # spec.target.template.metadata annotations onto the generated Secret, so as
-  # written this never reaches the Secret and CloudNativePG never sees it.
-  # Reproduced here deliberately to keep migrations byte-identical; moving it
-  # somewhere it takes effect is a separate, behavioural change.
-  annotations:
-    cnpg.io/reload: "true"
+  # -- Extra annotations on the ExternalSecret objects themselves. Empty by
+  # default, and deliberately so: annotations here do NOT reach the generated
+  # Secret. External Secrets copies spec.target.template metadata onto the
+  # Secret, and falls back to copying the ExternalSecret's own metadata only
+  # when no template is set at all. Use secretLabels below for anything the
+  # operator has to see.
+  annotations: {}
+  secret:
+    # -- Metadata for the generated Secrets, passed through verbatim as
+    # spec.target.template.metadata, so both `labels` and `annotations` work and
+    # the shape matches the External Secrets API rather than inventing one.
+    #
+    # cnpg.io/reload is a *label*, not an annotation, and belongs on the Secret,
+    # not on the ExternalSecret. CloudNativePG documents it under predefined
+    # labels: "Available on ConfigMap and Secret resources. When set to true, a
+    # change in the resource is automatically reloaded by the operator." This is
+    # the only placement that makes a rotated password actually get picked up.
+    #
+    # Set to `null` -- not `{}` -- to render no template metadata at all: Helm
+    # deep-merges maps, so `{}` leaves the default below in place.
+    metadata:
+      labels:
+        cnpg.io/reload: "true"
   admin:
     # -- Doppler key for the superuser password. Required.
     remoteKey: ""
