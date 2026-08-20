@@ -89,6 +89,8 @@ pooler:
     parameters:
       max_client_conn: "1000"
       default_pool_size: "10"
+  # -- Resource requests and limits for the operator-managed pgbouncer container.
+  resources: {}
   podLabel: pooler
 
 externalSecrets:

@@ -8,6 +8,10 @@ cluster:
     size: 4Gi
 pooler:
   enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
 backup:
   objectStore:
     retentionPolicy: 14d

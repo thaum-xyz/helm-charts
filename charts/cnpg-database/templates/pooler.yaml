@@ -22,7 +22,13 @@ spec:
         app: {{ .Values.pooler.podLabel }}
     spec:
       # Required by the Pooler schema even though the operator populates it.
+      {{- with .Values.pooler.resources }}
+      containers:
+        - name: pgbouncer
+          resources: {{- toYaml . | nindent 12 }}
+      {{- else }}
       containers: []
+      {{- end }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

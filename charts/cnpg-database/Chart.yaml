@@ -2,4 +2,4 @@ apiVersion: v2
 name: cnpg-database
 description: CloudNativePG cluster with barman-cloud object store, scheduled backups, Doppler-backed credentials and backup alerting
 type: application
-version: 0.2.0
+version: 0.2.1
