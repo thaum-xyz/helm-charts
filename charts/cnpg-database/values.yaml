@@ -21,8 +21,12 @@ retain: true
 
 cluster:
   instances: 2
-  # -- Empty means omit spec.imageName and take the operator default.
-  imageName: ""
+  # -- Pinned rather than empty. Left unset, CloudNativePG defaults it at
+  # creation and freezes that value into the spec forever, so a fleet ends up
+  # spanning whatever the operator happened to ship on each cluster's birthday.
+  # An existing cluster must override this with its current image; changing the
+  # major version triggers an offline pg_upgrade.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
   # -- Empty means omit spec.primaryUpdateMethod.
   primaryUpdateMethod: ""
   monitoring:
