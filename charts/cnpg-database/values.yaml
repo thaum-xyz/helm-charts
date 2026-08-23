@@ -39,7 +39,27 @@ cluster:
   # impose limits on the clusters that intentionally set requests only.
   resources: {}
   # -- Passthrough for spec.postgresql (parameters, shared_preload_libraries...).
-  postgresql: {}
+  # The parameters below bound WAL growth; a per-database values file can
+  # override any single key, because Helm deep-merges maps.
+  postgresql:
+    parameters:
+      # A replica that goes away keeps its replication slot, and with the CNPG
+      # default of -1 the primary retains WAL for it forever. kured reboots a
+      # node three mornings a week, so this is not hypothetical: it filled
+      # pocket-id's volume and took the database down with it.
+      max_slot_wal_keep_size: "512MB"
+      # Slots already guarantee retention, so this only sets a floor. 512MB (the
+      # default) was most of the WAL sitting on every volume.
+      wal_keep_size: "128MB"
+      # Full-page images dominate WAL on small, frequently-touched databases.
+      # lz4 over zstd for CPU; both exist in every image in use, back to 15.2.
+      wal_compression: "lz4"
+      # WAL segments are 16MB whatever they hold, so a forced switch every 5
+      # minutes (the CNPG default) bought ~3GB/day of mostly padding on a 13MB
+      # database. 15 minutes trades RPO for that.
+      archive_timeout: "900s"
+      # Fewer checkpoints, fewer full-page writes. Costs recovery time.
+      checkpoint_timeout: "900s"
   bootstrap:
     # -- false omits spec.bootstrap entirely. Needed for clusters that are
     # already initialised and have no bootstrap stanza in their live spec;
