@@ -86,15 +86,18 @@ backup:
   objectStore:
     # -- NOT derived from the release name: several namespaces host more than one
     # cluster and each needs its own store.
-    name: backblaze
+    name: versity
     # -- Varies per database (3d to 30d in practice); no safe default beyond this.
     retentionPolicy: 30d
-    bucketPrefix: s3://minio-ankhmorpork-thaum-xyz/postgres
+    bucketPrefix: s3://cnpg/postgres
     # -- Required. Note this is not always the namespace name.
     pathSuffix: ""
     # -- Escape hatch; wins over bucketPrefix/pathSuffix.
     destinationPath: ""
-    endpointURL: https://s3.eu-central-003.backblazeb2.com
+    # -- The in-cluster gateway. Backblaze was the previous target; every cluster
+    # moved off it, so a new one defaulting there would have been a silent
+    # regression.
+    endpointURL: http://versitygw.cnpg-system.svc.cluster.local:7070
     wal:
       compression: gzip
     credentials:
