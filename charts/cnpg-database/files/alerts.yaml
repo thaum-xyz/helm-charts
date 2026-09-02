@@ -8,9 +8,14 @@ groups:
       # Aggregated by job, which carries "<namespace>/<cluster>", because a
       # namespace can hold several clusters. max() picks the primary: replicas
       # report 0.
+      #
+      # Selected on this release's own job. Every database installs this chart,
+      # so without it each release evaluates the same cluster-wide query and the
+      # fleet loads one identical copy of each alert per release. Scoping by
+      # namespace alone would not be enough: vod-arr holds three clusters.
       - alert: CNPGBackupTooOld
         expr: |
-          time() - max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp > 0)
+          time() - max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > 0)
             > {{ .Values.prometheusRule.maxBackupAgeSeconds }}
         for: 1h
         labels:
@@ -26,7 +31,7 @@ groups:
 
       - alert: CNPGBackupMissing
         expr: |
-          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp) == 0
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}) == 0
         for: 6h
         labels:
           severity: critical
@@ -40,8 +45,8 @@ groups:
 
       - alert: CNPGBackupFailing
         expr: |
-          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp)
-            > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp)
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"})
+            > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"})
         for: 1h
         labels:
           severity: warning
