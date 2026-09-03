@@ -65,7 +65,7 @@ groups:
   # backup rules above are.
   - name: cnpg-database
     rules:
-      - alert: LongRunningTransaction
+      - alert: CNPGLongRunningTransaction
         expr: |
           cnpg_backends_max_tx_duration_seconds{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxTransactionSeconds }}
         for: 1m
@@ -82,7 +82,7 @@ groups:
       # Upstream annotates this as "waiting longer than 5 minutes", which
       # misreads the metric: cnpg_backends_waiting_total counts backends blocked
       # on locks, it is not a duration.
-      - alert: BackendsWaiting
+      - alert: CNPGBackendsWaiting
         expr: |
           cnpg_backends_waiting_total{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxBackendsWaiting }}
         for: 1m
@@ -95,7 +95,7 @@ groups:
             on locks, past the {{ .Values.prometheusRule.maxBackendsWaiting }}
             threshold.
 
-      - alert: PGDatabaseXIDAge
+      - alert: CNPGDatabaseXIDAge
         expr: |
           cnpg_pg_database_xid_age{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxXidAge }}
         for: 1m
@@ -107,7 +107,7 @@ groups:
             {{ `{{ $labels.pod }}` }} is {{ `{{ $value }}` }} transactions past
             its frozen XID. Left unchecked this ends in a wraparound shutdown.
 
-      - alert: PGReplicationLag
+      - alert: CNPGReplicationLag
         expr: |
           cnpg_pg_replication_lag{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
         for: 1m
@@ -120,7 +120,7 @@ groups:
             primary, past the
             {{ .Values.prometheusRule.maxReplicationLagSeconds }}s threshold.
 
-      - alert: LastFailedArchiveTime
+      - alert: CNPGLastFailedArchiveTime
         expr: |
           (cnpg_pg_stat_archiver_last_failed_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} - cnpg_pg_stat_archiver_last_archived_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}) > 1
         for: 1m
@@ -132,7 +132,7 @@ groups:
             {{ `{{ $labels.pod }}` }} failed to archive WAL more recently than it
             last succeeded. Recovery depends on an unbroken WAL chain.
 
-      - alert: DatabaseDeadlockConflicts
+      - alert: CNPGDatabaseDeadlockConflicts
         expr: |
           cnpg_pg_stat_database_deadlocks{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxDeadlocks }}
         for: 1m
@@ -145,7 +145,7 @@ groups:
             conflicts, past the {{ .Values.prometheusRule.maxDeadlocks }}
             threshold.
 
-      - alert: ReplicaFailingReplication
+      - alert: CNPGReplicaFailingReplication
         expr: |
           cnpg_pg_replication_in_recovery{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > cnpg_pg_replication_is_wal_receiver_up{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}
         for: 1m
