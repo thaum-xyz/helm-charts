@@ -1,0 +1,21 @@
+{{- if and .Values.pooler.enabled .Values.podMonitor.enabled }}
+{{- /*
+  Same deprecation and same reasoning as templates/podmonitor.yaml, for the
+  pooler's pgbouncer metrics. jobLabel is cnpg.io/poolerName, not
+  cnpg.io/cluster: pooler pods carry both, and keying on the cluster would give
+  the pooler the same job as the database it fronts.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ .Values.pooler.name }}-metrics
+  labels: {{- include "cnpg-database.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/podRole: pooler
+      cnpg.io/poolerName: {{ .Values.pooler.name }}
+  jobLabel: cnpg.io/poolerName
+  podMetricsEndpoints:
+    - port: metrics
+{{- end }}

@@ -5,17 +5,18 @@ groups:
       # built-in collector metrics report 0 for plugin-method backups, so an
       # alert on them fires forever while telling you nothing.
       #
-      # Aggregated by job, which carries "<namespace>/<cluster>", because a
-      # namespace can hold several clusters. max() picks the primary: replicas
-      # report 0.
+      # Aggregated by job, which the PodMonitor pins to the cluster name via
+      # jobLabel. max() picks the primary: replicas report 0.
       #
-      # Selected on this release's own job. Every database installs this chart,
-      # so without it each release evaluates the same cluster-wide query and the
-      # fleet loads one identical copy of each alert per release. Scoping by
-      # namespace alone would not be enough: vod-arr holds three clusters.
+      # Selected on this release's own job and namespace. Every database
+      # installs this chart, so without it each release evaluates the same
+      # cluster-wide query and the fleet loads one identical copy of each alert
+      # per release. Namespace alone would not be enough -- vod-arr holds three
+      # clusters -- and job alone would not either, three clusters being called
+      # "postgres" in different namespaces.
       - alert: CNPGBackupTooOld
         expr: |
-          time() - max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > 0)
+          time() - max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > 0)
             > {{ .Values.prometheusRule.maxBackupAgeSeconds }}
         for: 1h
         labels:
@@ -31,7 +32,7 @@ groups:
 
       - alert: CNPGBackupMissing
         expr: |
-          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}) == 0
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}) == 0
         for: 6h
         labels:
           severity: critical
@@ -45,8 +46,8 @@ groups:
 
       - alert: CNPGBackupFailing
         expr: |
-          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"})
-            > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"})
+          max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"})
+            > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"})
         for: 1h
         labels:
           severity: warning
@@ -67,7 +68,7 @@ groups:
     rules:
       - alert: CNPGLongRunningTransaction
         expr: |
-          cnpg_backends_max_tx_duration_seconds{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxTransactionSeconds }}
+          cnpg_backends_max_tx_duration_seconds{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxTransactionSeconds }}
         for: 1m
         labels:
           severity: warning
@@ -84,7 +85,7 @@ groups:
       # on locks, it is not a duration.
       - alert: CNPGBackendsWaiting
         expr: |
-          cnpg_backends_waiting_total{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxBackendsWaiting }}
+          cnpg_backends_waiting_total{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxBackendsWaiting }}
         for: 1m
         labels:
           severity: warning
@@ -97,7 +98,7 @@ groups:
 
       - alert: CNPGDatabaseXIDAge
         expr: |
-          cnpg_pg_database_xid_age{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxXidAge }}
+          cnpg_pg_database_xid_age{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxXidAge }}
         for: 1m
         labels:
           severity: warning
@@ -109,7 +110,7 @@ groups:
 
       - alert: CNPGReplicationLag
         expr: |
-          cnpg_pg_replication_lag{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
+          cnpg_pg_replication_lag{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
         for: 1m
         labels:
           severity: warning
@@ -122,7 +123,7 @@ groups:
 
       - alert: CNPGLastFailedArchiveTime
         expr: |
-          (cnpg_pg_stat_archiver_last_failed_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} - cnpg_pg_stat_archiver_last_archived_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}) > 1
+          (cnpg_pg_stat_archiver_last_failed_time{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} - cnpg_pg_stat_archiver_last_archived_time{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}) > 1
         for: 1m
         labels:
           severity: warning
@@ -134,7 +135,7 @@ groups:
 
       - alert: CNPGDatabaseDeadlockConflicts
         expr: |
-          cnpg_pg_stat_database_deadlocks{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxDeadlocks }}
+          cnpg_pg_stat_database_deadlocks{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxDeadlocks }}
         for: 1m
         labels:
           severity: warning
@@ -147,7 +148,7 @@ groups:
 
       - alert: CNPGReplicaFailingReplication
         expr: |
-          cnpg_pg_replication_in_recovery{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > cnpg_pg_replication_is_wal_receiver_up{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}
+          cnpg_pg_replication_in_recovery{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > cnpg_pg_replication_is_wal_receiver_up{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}
         for: 1m
         labels:
           severity: warning
