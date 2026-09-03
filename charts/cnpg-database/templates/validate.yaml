@@ -1,3 +1,9 @@
+{{- if and .Values.podMonitor.enabled .Values.cluster.monitoring.enablePodMonitor }}
+{{- fail "cluster.monitoring.enablePodMonitor and podMonitor.enabled are both true: the operator and the chart would each create a PodMonitor over the same pods and port, so every instance is scraped twice under two different job labels" }}
+{{- end }}
+{{- if and .Values.pooler.enabled .Values.podMonitor.enabled .Values.pooler.monitoring.enablePodMonitor }}
+{{- fail "pooler.monitoring.enablePodMonitor and podMonitor.enabled are both true: the operator and the chart would each create a PodMonitor over the pooler pods, so every replica is scraped twice under two different job labels" }}
+{{- end }}
 {{- if and .Values.cluster.bootstrap.enabled (not .Values.database) }}
 {{- fail "database is required when cluster.bootstrap.enabled" }}
 {{- end }}

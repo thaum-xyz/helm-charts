@@ -1,0 +1,32 @@
+{{- if .Values.podMonitor.enabled }}
+{{- /*
+  CloudNativePG deprecated spec.monitoring.enablePodMonitor and asks operators to
+  manage the PodMonitor themselves, so the chart owns it here.
+
+  The name carries a -metrics suffix rather than matching the cluster. The
+  operator's PodMonitor is named after the cluster and, on a chart-installed
+  cluster, inherits app.kubernetes.io/managed-by=Helm without the
+  meta.helm.sh/release-* annotations Helm needs to adopt a resource -- so a
+  same-named PodMonitor would fail the upgrade with an ownership error rather
+  than take the old one over. The operator deletes its own on the same upgrade,
+  since enablePodMonitor goes false and it only removes PodMonitors it owns.
+
+  jobLabel pins job to the cluster name off the pod's own cnpg.io/cluster
+  label, so it does not follow the PodMonitor's name. That is not unique on its
+  own -- three clusters here are called "postgres" in different namespaces --
+  so the alerts in files/alerts.yaml select on job and namespace together.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "cnpg-database.fullname" . }}-metrics
+  labels: {{- include "cnpg-database.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: {{ include "cnpg-database.fullname" . }}
+      cnpg.io/podRole: instance
+  jobLabel: cnpg.io/cluster
+  podMetricsEndpoints:
+    - port: metrics
+{{- end }}

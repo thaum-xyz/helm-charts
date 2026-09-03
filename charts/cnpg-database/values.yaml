@@ -33,7 +33,9 @@ cluster:
   # -- Empty means omit spec.primaryUpdateMethod.
   primaryUpdateMethod: ""
   monitoring:
-    enablePodMonitor: true
+    # -- Deprecated upstream; the chart renders the PodMonitor itself. See
+    # templates/podmonitor.yaml.
+    enablePodMonitor: false
   affinity:
     enablePodAntiAffinity: true
     podAntiAffinityType: required
@@ -113,7 +115,8 @@ pooler:
   instances: 2
   type: rw
   monitoring:
-    enablePodMonitor: true
+    # -- Deprecated upstream, as for the cluster.
+    enablePodMonitor: false
   pgbouncer:
     poolMode: session
     parameters:
@@ -164,6 +167,11 @@ externalSecrets:
   backup:
     accessKeyRemoteKey: POSTGRES_S3_ACCESS_KEY
     secretKeyRemoteKey: POSTGRES_S3_SECRET_KEY
+
+# -- Chart-managed PodMonitors for the cluster and, when enabled, the pooler.
+# Replaces the operator's own, which CloudNativePG has deprecated.
+podMonitor:
+  enabled: true
 
 prometheusRule:
   # -- Backup alerting. Deliberately built on the barman plugin's own metrics
