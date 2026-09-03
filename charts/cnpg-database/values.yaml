@@ -173,3 +173,15 @@ prometheusRule:
   enabled: true
   # -- Warn when the newest backup is older than this many seconds (default 2d).
   maxBackupAgeSeconds: 172800
+  # -- Warn when a single transaction has been open longer than this many
+  # seconds. Raise it per release for a database with a legitimate long-running
+  # batch job; an open transaction holds back vacuum, so do not raise it far.
+  maxTransactionSeconds: 300
+  # -- Warn when more than this many backends are blocked on locks.
+  maxBackendsWaiting: 300
+  # -- Warn when transactions since the frozen XID exceed this.
+  maxXidAge: 150000000
+  # -- Warn when a standby lags the primary by more than this many seconds.
+  maxReplicationLagSeconds: 300
+  # -- Warn when recorded deadlock conflicts exceed this count.
+  maxDeadlocks: 10

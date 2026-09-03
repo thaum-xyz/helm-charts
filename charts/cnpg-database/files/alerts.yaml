@@ -56,3 +56,103 @@ groups:
             The last backup attempt for {{ `{{ $labels.job }}` }} failed more
             recently than the last success, so backups are running but not
             completing.
+
+  # Moved here from a single cluster-wide PrometheusRule that lived alongside the
+  # CNPG operator. Every rule in it described databases running in other
+  # namespaces, and every release matched every other release's clusters, so a
+  # threshold could not be tuned for one database without moving it for all
+  # eleven. Scoped by job -- "<namespace>/<cluster>" -- for the same reason the
+  # backup rules above are.
+  - name: cnpg-database
+    rules:
+      - alert: CNPGLongRunningTransaction
+        expr: |
+          cnpg_backends_max_tx_duration_seconds{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxTransactionSeconds }}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: A transaction on {{ `{{ $labels.job }}` }} has been open too long
+          description: >-
+            A backend on {{ `{{ $labels.pod }}` }} has held a transaction open for
+            {{ `{{ $value | humanizeDuration }}` }}, past the
+            {{ .Values.prometheusRule.maxTransactionSeconds }}s threshold. A
+            transaction left open holds back vacuum and can block other writers.
+
+      # Upstream annotates this as "waiting longer than 5 minutes", which
+      # misreads the metric: cnpg_backends_waiting_total counts backends blocked
+      # on locks, it is not a duration.
+      - alert: CNPGBackendsWaiting
+        expr: |
+          cnpg_backends_waiting_total{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxBackendsWaiting }}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Backends on {{ `{{ $labels.job }}` }} are blocked on locks
+          description: >-
+            {{ `{{ $value }}` }} backends on {{ `{{ $labels.pod }}` }} are waiting
+            on locks, past the {{ .Values.prometheusRule.maxBackendsWaiting }}
+            threshold.
+
+      - alert: CNPGDatabaseXIDAge
+        expr: |
+          cnpg_pg_database_xid_age{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxXidAge }}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Transaction ID age on {{ `{{ $labels.job }}` }} is high
+          description: >-
+            {{ `{{ $labels.pod }}` }} is {{ `{{ $value }}` }} transactions past
+            its frozen XID. Left unchecked this ends in a wraparound shutdown.
+
+      - alert: CNPGReplicationLag
+        expr: |
+          cnpg_pg_replication_lag{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Standby of {{ `{{ $labels.job }}` }} is lagging
+          description: >-
+            The standby is {{ `{{ $value | humanizeDuration }}` }} behind the
+            primary, past the
+            {{ .Values.prometheusRule.maxReplicationLagSeconds }}s threshold.
+
+      - alert: CNPGLastFailedArchiveTime
+        expr: |
+          (cnpg_pg_stat_archiver_last_failed_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} - cnpg_pg_stat_archiver_last_archived_time{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: WAL archiving on {{ `{{ $labels.job }}` }} is failing
+          description: >-
+            {{ `{{ $labels.pod }}` }} failed to archive WAL more recently than it
+            last succeeded. Recovery depends on an unbroken WAL chain.
+
+      - alert: CNPGDatabaseDeadlockConflicts
+        expr: |
+          cnpg_pg_stat_database_deadlocks{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > {{ .Values.prometheusRule.maxDeadlocks }}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Deadlocks on {{ `{{ $labels.job }}` }}
+          description: >-
+            {{ `{{ $labels.pod }}` }} has recorded {{ `{{ $value }}` }} deadlock
+            conflicts, past the {{ .Values.prometheusRule.maxDeadlocks }}
+            threshold.
+
+      - alert: CNPGReplicaFailingReplication
+        expr: |
+          cnpg_pg_replication_in_recovery{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"} > cnpg_pg_replication_is_wal_receiver_up{job="{{ .Release.Namespace }}/{{ include "cnpg-database.fullname" . }}"}
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Replica of {{ `{{ $labels.job }}` }} is not replicating
+          description: >-
+            {{ `{{ $labels.pod }}` }} is in recovery but its WAL receiver is down,
+            so it has stopped following the primary.
