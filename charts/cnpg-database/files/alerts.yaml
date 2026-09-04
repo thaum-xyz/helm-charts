@@ -121,17 +121,54 @@ groups:
             primary, past the
             {{ .Values.prometheusRule.maxReplicationLagSeconds }}s threshold.
 
+      # A single failed archive is not an incident. The archive_command retries
+      # within seconds, PostgreSQL holds the segment in pg_wal until it lands,
+      # and last_archived_time overtakes last_failed_time on the next success.
+      # At 1m this paged three times in one minute on 2026-09-03, when an fio run
+      # saturated the NFS export behind the versitygw gateway every cluster
+      # archives through: four primaries recorded exactly one failed archive
+      # each, the backlog peaked at one segment, and archiving recovered in 40
+      # seconds unaided. 15m is long enough that only a failure the retry loop
+      # cannot clear reaches a human, and short enough to still beat the
+      # backlog alert below.
       - alert: CNPGLastFailedArchiveTime
         expr: |
           (cnpg_pg_stat_archiver_last_failed_time{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} - cnpg_pg_stat_archiver_last_archived_time{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}) > 1
-        for: 1m
+        for: 15m
         labels:
           severity: warning
         annotations:
           summary: WAL archiving on {{ `{{ $labels.job }}` }} is failing
           description: >-
-            {{ `{{ $labels.pod }}` }} failed to archive WAL more recently than it
-            last succeeded. Recovery depends on an unbroken WAL chain.
+            {{ `{{ $labels.pod }}` }} has failed to archive WAL more recently than
+            it last succeeded for 15m, so the retry loop is not clearing it.
+            Recovery depends on an unbroken WAL chain.
+
+      # The alert above says archiving is broken; this one says it is doing
+      # damage. Segments in archive_status/ready are the ones PostgreSQL may not
+      # recycle, so a backlog that will not drain ends with pg_wal filling the
+      # data volume and the primary shutting down. Steady state is 0 ready.
+      #
+      # cnpg_collector_* is trustworthy here, unlike for the backup metrics
+      # above: these counters come from PostgreSQL's own archiver state and read
+      # correctly under the plugin backup method.
+      #
+      # max() picks the primary, as with the backup alerts: only the primary
+      # archives, and replicas report 0.
+      - alert: CNPGWALArchiveBacklog
+        expr: |
+          max by (namespace, job) (cnpg_collector_pg_wal_archive_status{value="ready", job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"})
+            > {{ .Values.prometheusRule.maxWalSegmentsReady }}
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: WAL archive backlog on {{ `{{ $labels.job }}` }} is not draining
+          description: >-
+            {{ `{{ $value }}` }} WAL segments are waiting to be archived, past the
+            {{ .Values.prometheusRule.maxWalSegmentsReady }} threshold, and have
+            not drained in 30m. PostgreSQL cannot recycle them, so pg_wal grows
+            until the archive target accepts them or the data volume fills.
 
       - alert: CNPGDatabaseDeadlockConflicts
         expr: |

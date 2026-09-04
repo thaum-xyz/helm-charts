@@ -193,3 +193,7 @@ prometheusRule:
   maxReplicationLagSeconds: 300
   # -- Warn when recorded deadlock conflicts exceed this count.
   maxDeadlocks: 10
+  # -- Warn when this many WAL segments sit unarchived in archive_status/ready
+  # and do not drain. Steady state is 0; max_wal_size allows 64 segments before
+  # pg_wal stops growing on its own, so this fires well ahead of a full volume.
+  maxWalSegmentsReady: 10
