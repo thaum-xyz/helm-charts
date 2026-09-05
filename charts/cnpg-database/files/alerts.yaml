@@ -170,18 +170,24 @@ groups:
             not drained in 30m. PostgreSQL cannot recycle them, so pg_wal grows
             until the archive target accepts them or the data volume fills.
 
+      # cnpg_pg_stat_database_deadlocks is a counter, and reading it directly
+      # compared a lifetime total against a threshold: once a database had ever
+      # crossed it the alert fired forever and could not recover, while a burst
+      # of deadlocks on a young cluster went unnoticed. increase() over an hour
+      # asks the question that was always meant -- are deadlocks happening now.
+      # It also handles the resets that pg_stat_reset() and a failover produce.
       - alert: CNPGDatabaseDeadlockConflicts
         expr: |
-          cnpg_pg_stat_database_deadlocks{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxDeadlocks }}
-        for: 1m
+          increase(cnpg_pg_stat_database_deadlocks{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}[1h]) > {{ .Values.prometheusRule.maxDeadlocksPerHour }}
+        for: 5m
         labels:
           severity: warning
         annotations:
           summary: Deadlocks on {{ `{{ $labels.job }}` }}
           description: >-
             {{ `{{ $labels.pod }}` }} has recorded {{ `{{ $value }}` }} deadlock
-            conflicts, past the {{ .Values.prometheusRule.maxDeadlocks }}
-            threshold.
+            conflicts in the last hour, past the
+            {{ .Values.prometheusRule.maxDeadlocksPerHour }} threshold.
 
       - alert: CNPGReplicaFailingReplication
         expr: |
