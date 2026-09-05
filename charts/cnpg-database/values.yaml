@@ -191,8 +191,10 @@ prometheusRule:
   maxXidAge: 150000000
   # -- Warn when a standby lags the primary by more than this many seconds.
   maxReplicationLagSeconds: 300
-  # -- Warn when recorded deadlock conflicts exceed this count.
-  maxDeadlocks: 10
+  # -- Warn when this many deadlock conflicts are recorded within an hour.
+  # Measured with increase(), not read off the counter directly: the raw metric
+  # is a lifetime total, so a threshold against it fires forever once crossed.
+  maxDeadlocksPerHour: 10
   # -- Warn when this many WAL segments sit unarchived in archive_status/ready
   # and do not drain. Steady state is 0; max_wal_size allows 64 segments before
   # pg_wal stops growing on its own, so this fires well ahead of a full volume.
