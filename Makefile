@@ -1,6 +1,8 @@
 SHELL:=/bin/bash
 
-# Keep in sync with .github/workflows/chart-testing.yaml
+# Keep in sync with .github/workflows/chart-testing.yaml -- Renovate updates
+# both from the marker below, so they move together.
+# renovate: datasource=github-releases depName=norwoodj/helm-docs extractVersion=^v(?<version>.+)$
 HELM_DOCS_VERSION:=1.14.2
 
 .PHONY: help

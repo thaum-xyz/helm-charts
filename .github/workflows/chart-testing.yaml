@@ -26,6 +26,7 @@ jobs:
 
       - uses: azure/setup-helm@v4
         with:
+          # renovate: datasource=github-releases depName=helm/helm
           version: v3.15.4
 
       - uses: actions/setup-python@v5
@@ -42,6 +43,7 @@ jobs:
       # manifests. The schema check below does that without a cluster.
       - name: Validate rendered manifests against schemas
         env:
+          # renovate: datasource=github-releases depName=yannh/kubeconform
           KUBECONFORM_VERSION: v0.8.0
           CRD_CATALOG: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
         run: |
@@ -71,6 +73,7 @@ jobs:
       # commit as the values change that caused it.
       - name: Check generated chart docs are up to date
         env:
+          # renovate: datasource=github-releases depName=norwoodj/helm-docs extractVersion=^v(?<version>.+)$
           HELM_DOCS_VERSION: 1.14.2
         run: |
           curl -sSL --fail \
