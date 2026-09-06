@@ -1,0 +1,12 @@
+# Values for `ct install`, which runs against a bare kind cluster.
+#
+# The chart defaults prometheusRule.enabled to true, and kind has no
+# prometheus-operator CRDs, so the default render cannot be installed:
+#   no matches for kind "PrometheusRule" in version "monitoring.coreos.com/v1"
+#
+# This was latent rather than new -- ct only processes charts that changed in a
+# pull request, and this chart had not been touched since `ct install` was added,
+# so nothing had ever tried. Disabling the rule here keeps the DaemonSet and
+# ConfigMap install-tested, which is the part kind can actually exercise.
+prometheusRule:
+  enabled: false
