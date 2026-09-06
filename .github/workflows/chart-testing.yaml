@@ -20,16 +20,16 @@ jobs:
   ct:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
         with:
           # renovate: datasource=github-releases depName=helm/helm
-          version: v3.15.4
+          version: v4.2.4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
