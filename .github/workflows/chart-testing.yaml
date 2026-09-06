@@ -26,6 +26,7 @@ jobs:
 
       - uses: azure/setup-helm@v4
         with:
+          # renovate: datasource=github-releases depName=helm/helm
           version: v3.15.4
 
       - uses: actions/setup-python@v5
@@ -42,6 +43,7 @@ jobs:
       # manifests. The schema check below does that without a cluster.
       - name: Validate rendered manifests against schemas
         env:
+          # renovate: datasource=github-releases depName=yannh/kubeconform
           KUBECONFORM_VERSION: v0.8.0
           CRD_CATALOG: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
         run: |
@@ -64,6 +66,28 @@ jobs:
             done
           done
           exit $rc
+
+      # Values documentation is generated from the "# --" comments in values.yaml,
+      # so it cannot drift from the chart unless someone forgets to regenerate.
+      # Checking it here rather than auto-committing keeps the README in the same
+      # commit as the values change that caused it.
+      - name: Check generated chart docs are up to date
+        env:
+          # renovate: datasource=github-releases depName=norwoodj/helm-docs extractVersion=^v(?<version>.+)$
+          HELM_DOCS_VERSION: 1.14.2
+        run: |
+          curl -sSL --fail \
+            "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar -xz -C /usr/local/bin helm-docs
+          helm-docs --chart-search-root=charts
+          # git-status rather than git-diff: diff ignores untracked files, so a
+          # new chart with no generated README would pass silently.
+          out="$(git status --porcelain -- 'charts/*/README.md')"
+          if [ -n "$out" ]; then
+            echo "$out"
+            echo "::error::charts/*/README.md is out of date. Run 'make docs' and commit the result."
+            exit 1
+          fi
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.10.0

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "prCreation": "immediate",
+  "assignees": [
+    "paulfantom"
+  ],
+  "reviewers": [
+    "paulfantom"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Tool versions pinned in CI and the Makefile, each marked with a renovate comment. One manager rather than one per variable, so a new pin only needs its comment.",
+      "managerFilePatterns": [
+        "/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/",
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\S+?\\s*[:=]{1,2}\\s*[\"']?(?<currentValue>[^\"'\\s]+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "CI dependencies, grouped and automerged as in ankhmorpork.",
+      "matchFileNames": [
+        ".github/**",
+        "Makefile"
+      ],
+      "groupName": "github actions",
+      "addLabels": [
+        "dependencies/ci",
+        "dependencies/automerge"
+      ],
+      "automerge": true
+    }
+  ]
+}
