@@ -108,10 +108,16 @@ groups:
             {{ `{{ $labels.pod }}` }} is {{ `{{ $value }}` }} transactions past
             its frozen XID. Left unchecked this ends in a wraparound shutdown.
 
+      # 10m rather than 1m. A standby that loses the pod network reports the
+      # whole gap as lag the instant it reconnects, so one brief network event
+      # trips this on every standby at once while nothing is actually wrong.
+      # Measured over the 30 days to 2026-09-09: the condition never held longer
+      # than 180s, and every occurrence traced to a node reboot or a switch
+      # firmware restart. Real lag does not clear itself, so the delay is free.
       - alert: CNPGReplicationLag
         expr: |
           cnpg_pg_replication_lag{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
-        for: 1m
+        for: 10m
         labels:
           severity: warning
         annotations:
@@ -189,10 +195,14 @@ groups:
             conflicts in the last hour, past the
             {{ .Values.prometheusRule.maxDeadlocksPerHour }} threshold.
 
+      # 10m rather than 1m, for the reason given on CNPGReplicationLag above:
+      # the WAL receiver is legitimately down for as long as it takes to
+      # reconnect after any network interruption, and it recovers unattended.
+      # A replica that is genuinely stuck stays stuck.
       - alert: CNPGReplicaFailingReplication
         expr: |
           cnpg_pg_replication_in_recovery{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > cnpg_pg_replication_is_wal_receiver_up{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"}
-        for: 1m
+        for: 10m
         labels:
           severity: warning
         annotations:
