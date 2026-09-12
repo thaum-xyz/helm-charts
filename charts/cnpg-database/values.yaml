@@ -98,8 +98,11 @@ backup:
     destinationPath: ""
     # -- The in-cluster gateway. Backblaze was the previous target; every cluster
     # moved off it, so a new one defaulting there would have been a silent
-    # regression.
-    endpointURL: http://versitygw.cnpg-system.svc.cluster.local:7070
+    # regression. The gateway itself then moved out of cnpg-system into
+    # platform-storage, which is the same failure in a different direction: the
+    # old name resolves to nothing, and a cluster still carrying it archives no
+    # WAL while reporting nothing worse than a stale condition.
+    endpointURL: http://cnpg-versity-gw.platform-storage.svc.cluster.local:7070
     wal:
       compression: gzip
     credentials:

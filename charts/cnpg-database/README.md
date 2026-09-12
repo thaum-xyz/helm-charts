@@ -1,6 +1,6 @@
 # cnpg-database
 
-![Version: 0.10.3](https://img.shields.io/badge/Version-0.10.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.10.4](https://img.shields.io/badge/Version-0.10.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 CloudNativePG cluster with barman-cloud object store, scheduled backups, Doppler-backed credentials and backup alerting
 
@@ -21,7 +21,7 @@ CloudNativePG cluster with barman-cloud object store, scheduled backups, Doppler
 | backup.objectStore.credentials.secretKeyKey | string | `"S3_SECRET_KEY"` |  |
 | backup.objectStore.credentials.secretName | string | `""` | Empty means <fullname>-backup. |
 | backup.objectStore.destinationPath | string | `""` | Escape hatch; wins over bucketPrefix/pathSuffix. |
-| backup.objectStore.endpointURL | string | `"http://versitygw.cnpg-system.svc.cluster.local:7070"` | The in-cluster gateway. Backblaze was the previous target; every cluster moved off it, so a new one defaulting there would have been a silent regression. |
+| backup.objectStore.endpointURL | string | `"http://cnpg-versity-gw.platform-storage.svc.cluster.local:7070"` | The in-cluster gateway. Backblaze was the previous target; every cluster moved off it, so a new one defaulting there would have been a silent regression. The gateway itself then moved out of cnpg-system into platform-storage, which is the same failure in a different direction: the old name resolves to nothing, and a cluster still carrying it archives no WAL while reporting nothing worse than a stale condition. |
 | backup.objectStore.name | string | `"versity"` | NOT derived from the release name: several namespaces host more than one cluster and each needs its own store. |
 | backup.objectStore.pathSuffix | string | `""` | Required. Note this is not always the namespace name. |
 | backup.objectStore.retentionPolicy | string | `"30d"` | Varies per database (3d to 30d in practice); no safe default beyond this. |
