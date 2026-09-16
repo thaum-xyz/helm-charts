@@ -61,6 +61,19 @@
         "charts/kyverno-policy-crds/**"
       ],
       "enabled": false
+    },
+    {
+      "description": "The wrapper's one dependency moves whenever upstream publishes a kyverno-api; land it at once. A CRD-only chart runs no code and changes additively, so the soak that guards application bumps against early bugs and supply-chain compromise buys nothing here -- and ankhmorpork's kyverno bump cannot pass validate-kyverno-crd-pin until the newer wrapper exists.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "kyverno-api"
+      ],
+      "addLabels": [
+        "dependencies/automerge"
+      ],
+      "automerge": true
     }
   ]
 }
