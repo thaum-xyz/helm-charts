@@ -18,6 +18,7 @@ is generated.
 | --- | --- |
 | [`cnpg-database`](charts/cnpg-database) | CloudNativePG cluster with barman-cloud object store, scheduled backups, Doppler-backed credentials and backup alerting |
 | [`lvm-diskprep`](charts/lvm-diskprep) | Prepares LVM node disks for CSI stacks via privileged DaemonSets and textfile metrics |
+| [`kyverno-policy-crds`](charts/kyverno-policy-crds) | The `policies.kyverno.io` CRDs as a release of their own, wrapping upstream's `kyverno-api` chart so that Helm stores them once and the release fits in a Secret |
 
 Which components deploy these is recorded in the [cluster documentation][docs]
 instead, where a change to the cluster is what invalidates it.

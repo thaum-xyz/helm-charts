@@ -22,6 +22,20 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\S+?\\s*[:=]{1,2}\\s*[\"']?(?<currentValue>[^\"'\\s]+)"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "description": "kyverno-policy-crds: its own version and its one dependency's are the same number, the kyverno-api version it wraps. One manager matches both `version:` lines so a bump moves them together and the result is published under the version it contains.",
+      "managerFilePatterns": [
+        "/^charts\\/kyverno-policy-crds\\/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "\\n\\s*version: (?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "kyverno-api",
+      "datasourceTemplate": "helm",
+      "registryUrlTemplate": "https://kyverno.github.io/api",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
@@ -37,6 +51,16 @@
         "dependencies/automerge"
       ],
       "automerge": true
+    },
+    {
+      "description": "The helmv3 manager would bump kyverno-policy-crds' dependency on its own and leave the chart version behind, which publishes nothing. The regex manager above owns that file.",
+      "matchManagers": [
+        "helmv3"
+      ],
+      "matchFileNames": [
+        "charts/kyverno-policy-crds/**"
+      ],
+      "enabled": false
     }
   ]
 }

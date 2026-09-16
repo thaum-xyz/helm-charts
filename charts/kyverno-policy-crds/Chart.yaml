@@ -1,0 +1,33 @@
+apiVersion: v2
+name: kyverno-policy-crds
+description: The policies.kyverno.io CustomResourceDefinitions as a release of their own, wrapping upstream's kyverno-api chart so that Helm can store them
+type: application
+version: 0.0.1-alpha.4
+home: https://github.com/thaum-xyz/helm-charts
+sources:
+  - https://github.com/thaum-xyz/helm-charts/tree/main/charts/kyverno-policy-crds
+# This chart renders nothing of its own. It exists because the kyverno-api chart cannot
+# be a Helm release by itself: Helm stores a release's own template files and
+# its rendered manifest in one Secret, and for that chart both are the same
+# eleven CRDs -- 2.4 MB of schema twice over, more than the 1 MiB a Secret may
+# hold once gzipped. A chart's dependencies are not stored, so behind this
+# wrapper the same CRDs are kept once, as manifest, and the release fits.
+#
+# This chart's version IS the kyverno-api version it wraps: the two `version:`
+# lines in this file always agree, and Renovate moves them together -- a regex
+# manager in .github/renovate.json matches both, and the helmv3 manager is off
+# for this chart so it cannot bump the dependency alone. The consumer therefore
+# pins the CRD version directly, and ankhmorpork's validate-kyverno-crd-pin
+# holds it back until the kyverno chart depends on the same one.
+#
+# No Chart.lock: with an exact version there is nothing left for it to pin,
+# and `helm dependency build` without one behaves as `update`.
+#
+# No ci/ directory, on purpose. The schema step of chart-testing.yaml has
+# nothing to check here -- kubeconform's upstream set carries no schema for
+# CustomResourceDefinition itself -- and the test that matters for CRDs is the
+# one `ct install` runs: that a kind API server accepts them.
+dependencies:
+  - name: kyverno-api
+    version: 0.0.1-alpha.4
+    repository: https://kyverno.github.io/api

@@ -23,6 +23,12 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
+      # The releaser packages with `helm package -u`, which resolves Chart.yaml
+      # dependencies, and Helm 3 resolves an HTTP repository only once it is
+      # registered. Keep in step with chart-repos in .ct.yaml.
+      - name: Register dependency repositories
+        run: helm repo add kyverno-api https://kyverno.github.io/api
+
       - name: Run chart-releaser
         uses: bitdeps/helm-oci-charts-releaser@v0.1.5
         with:
