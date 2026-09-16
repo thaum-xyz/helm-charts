@@ -1,0 +1,12 @@
+# Everything here passes straight through to the kyverno-api subchart; this
+# chart has no templates of its own.
+kyverno-api:
+  # -- Annotations put on every CRD. Deleting a CRD deletes every policy of that
+  # kind, and this release is nothing but CRDs, so an uninstall with no guard is
+  # the whole admission configuration of a cluster. `keep` makes Helm leave them
+  # in place, and it has to reach them through the chart -- an annotation added
+  # by hand does not survive the next upgrade.
+  annotations:
+    helm.sh/resource-policy: keep
+  # -- Labels put on every CRD.
+  labels: {}

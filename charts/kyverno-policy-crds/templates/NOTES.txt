@@ -1,0 +1,6 @@
+{{ .Chart.Name }} {{ .Chart.Version }}: the policies.kyverno.io CustomResourceDefinitions, from
+{{- range .Chart.Dependencies }} {{ .Name }} {{ .Version }}{{ end }}.
+
+This release owns CRDs and nothing else. Every CRD carries
+helm.sh/resource-policy: keep, so uninstalling it leaves them, and every policy
+of those kinds, in place.

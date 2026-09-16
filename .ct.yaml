@@ -3,6 +3,13 @@ chart-dirs:
 target-branch: main
 validate-maintainers: false
 
+# Repositories `helm dependency build` has to know: Helm 3 resolves an HTTP
+# dependency only from a registered repository. kyverno-api is not published to
+# an OCI registry, which would need none. publish-charts.yaml adds the same
+# repository before packaging; keep the two in step.
+chart-repos:
+  - kyverno-api=https://kyverno.github.io/api
+
 # If you want stricter linting:
 # helm-extra-args: --timeout 10m
 # lint-conf: .yamllint.yaml

@@ -1,0 +1,7 @@
+# Dependency archives are fetched by `helm dependency build` from Chart.lock,
+# in CI and at release time; they are not source.
+charts/*/charts/
+
+# kyverno-policy-crds pins its one dependency exactly, so the lock file pins
+# nothing; `helm dependency build` without it behaves as `update`.
+charts/kyverno-policy-crds/Chart.lock
