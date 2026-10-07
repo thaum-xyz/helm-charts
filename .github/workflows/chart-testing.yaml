@@ -90,7 +90,7 @@ jobs:
           fi
 
       - name: Create kind cluster
-        uses: helm/kind-action@v1.15.0
+        uses: helm/kind-action@v1.15.1
 
       # cnpg-database renders only CRs (Cluster, ObjectStore, ExternalSecret,
       # PrometheusRule), so it needs four operators' CRDs to install. It is
