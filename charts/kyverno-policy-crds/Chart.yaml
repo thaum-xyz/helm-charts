@@ -2,7 +2,7 @@ apiVersion: v2
 name: kyverno-policy-crds
 description: The policies.kyverno.io CustomResourceDefinitions as a release of their own, wrapping upstream's kyverno-api chart so that Helm can store them
 type: application
-version: 0.0.1-alpha.4
+version: 0.0.1-alpha.5
 home: https://github.com/thaum-xyz/helm-charts
 sources:
   - https://github.com/thaum-xyz/helm-charts/tree/main/charts/kyverno-policy-crds
@@ -29,5 +29,5 @@ sources:
 # one `ct install` runs: that a kind API server accepts them.
 dependencies:
   - name: kyverno-api
-    version: 0.0.1-alpha.4
+    version: 0.0.1-alpha.5
     repository: https://kyverno.github.io/api
