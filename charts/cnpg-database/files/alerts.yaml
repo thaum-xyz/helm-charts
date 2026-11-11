@@ -114,9 +114,30 @@ groups:
       # Measured over the 30 days to 2026-09-09: the condition never held longer
       # than 180s, and every occurrence traced to a node reboot or a switch
       # firmware restart. Real lag does not clear itself, so the delay is free.
+      #
+      # The second half asks the primary, because the standby's own figure is
+      # not lag on a quiet database. cnpg_pg_replication_lag is the time since
+      # the last transaction the standby replayed, reported whenever its
+      # receive and replay positions differ, and after a restart they differ
+      # until the primary next writes. A drain makes exactly that standby: the
+      # old primary is demoted, restarts, and follows a new primary that may
+      # have nothing to say. On 2026-11-10 atuin and mealie each read 880s and
+      # rising for eleven minutes while their primaries wrote no WAL at all
+      # and reported the standby zero bytes behind; the figure dropped to 0 at
+      # the first record written.
+      #
+      # cnpg_pg_stat_replication_replay_diff_bytes is the primary's count of
+      # what that standby has yet to replay, labelled with the standby's Pod
+      # name as application_name. A standby that is behind has both; one that
+      # is only idle has the first.
       - alert: CNPGReplicationLag
         expr: |
           cnpg_pg_replication_lag{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > {{ .Values.prometheusRule.maxReplicationLagSeconds }}
+          and on (namespace, job, pod)
+          label_replace(
+            cnpg_pg_stat_replication_replay_diff_bytes{job="{{ include "cnpg-database.fullname" . }}", namespace="{{ .Release.Namespace }}"} > 0,
+            "pod", "$1", "application_name", "(.+)"
+          )
         for: 10m
         labels:
           severity: warning
