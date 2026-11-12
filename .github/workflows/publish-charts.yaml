@@ -5,6 +5,11 @@ on:
     branches: ["main"]
     paths:
       - "charts/**"
+  # By hand, for a push whose run never started. On 2026-11-11 a GitHub
+  # Actions incident left the runs for two merges queued with no jobs; they
+  # could be neither cancelled nor re-run, and a push was the only trigger.
+  # skip_existing makes a second run over the same charts a no-op.
+  workflow_dispatch:
 
 jobs:
   release:
