@@ -18,12 +18,13 @@ jobs:
   # Separate from chart-testing so a stale README does not skip the install test.
   helm-docs:
     runs-on: ubuntu-latest
-    # Advisory: a stale README must not block Renovate automerge.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
       - name: Check generated chart docs are up to date
+        # Advisory: a stale README must not block Renovate automerge. On the
+        # step, not the job: a job-level continue-on-error still reports red.
+        continue-on-error: true
         env:
           # renovate: datasource=github-releases depName=norwoodj/helm-docs extractVersion=^v(?<version>.+)$
           HELM_DOCS_VERSION: 1.14.2
