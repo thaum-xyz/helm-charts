@@ -1,0 +1,43 @@
+name: chart-docs
+
+on:
+  pull_request:
+    paths:
+      - "charts/**"
+      - ".github/workflows/chart-docs.yaml"
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "charts/**"
+      - ".github/workflows/chart-docs.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  # Separate from chart-testing so a stale README does not skip the install test.
+  helm-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check generated chart docs are up to date
+        # Advisory: a stale README must not block Renovate automerge. On the
+        # step, not the job: a job-level continue-on-error still reports red.
+        continue-on-error: true
+        env:
+          # renovate: datasource=github-releases depName=norwoodj/helm-docs extractVersion=^v(?<version>.+)$
+          HELM_DOCS_VERSION: 1.14.2
+        run: |
+          curl -sSL --fail \
+            "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar -xz -C /usr/local/bin helm-docs
+          helm-docs --chart-search-root=charts
+          # git-status rather than git-diff: diff ignores untracked files, so a
+          # new chart with no generated README would pass silently.
+          out="$(git status --porcelain -- 'charts/*/README.md')"
+          if [ -n "$out" ]; then
+            echo "$out"
+            echo "::error::charts/*/README.md is out of date. Run 'make docs' and commit the result."
+            exit 1
+          fi
